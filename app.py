@@ -4,6 +4,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import *
 import time, random
+import json
 from paho.mqtt import client as mqtt_client
 # import random
 # import requests, traceback, logging, boto3, json, sys, os
@@ -12,7 +13,8 @@ from paho.mqtt import client as mqtt_client
 broker = 'broker.emqx.io'
 port = 1883
 topic = "esp32/smartstrip"
-client_id = f'python-mqtt-jasper'
+result_topic = "esp32/result"
+client_id = 'python-mqtt-jasper'
 app = Flask(__name__)
 
 def help():
@@ -35,6 +37,7 @@ def connect_mqtt():
     return client
 
 client = connect_mqtt()
+client2 = connect_mqtt()
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -52,6 +55,15 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return 'OK'
+
+def subscribe(client):
+    def on_message(client, userdata, msg):
+        returnmsg = msg.payload.decode()
+        convertedDict = json.loads(returnmsg)
+        print(json.dumps(convertedDict, indent=4, separators=(" ", " = ")))
+    client.subscribe(topic)
+    client.on_message = on_message
+
 
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
 def compose_textReplyMessage(userId, messageText):
@@ -73,3 +85,5 @@ def handle_text_message(event):
 if __name__ == "__main__":
     app.run()
     client.loop_start()
+    subscribe(client2)
+    client2.loop_forever()
