@@ -1,11 +1,11 @@
-from __future__ import unicode_literals
+# from __future__ import unicode_literals
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import *
-import random
-import requests, traceback, logging, boto3, json, sys, os
-from botocore.exceptions import ClientError
+# import random
+# import requests, traceback, logging, boto3, json, sys, os
+# from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
@@ -33,10 +33,12 @@ def compose_textReplyMessage(userId, messageText):
 # ==== [ 處理文字 TextMessage 訊息程式區段 ] ===
 @handler.add(MessageEvent, message=TextMessage)    
 def handle_text_message(event):
-    userId = event.source.user_id
-    messageText = event.message.text
-    logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
-    line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
+    # userId = event.source.user_id
+    # messageText = event.message.text
+    # logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
+    # line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
+    print("\n\nok\n\n")
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text='hi'))
 
 if __name__ == "__main__":
     app.run()
