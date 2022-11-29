@@ -85,8 +85,9 @@ def handle_text_message(event):
     tmp_token = event.reply_token
     userId = event.source.user_id
     messageText = event.message.text
+    client.publish(topic, messageText)
     # logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
-    compose_textReplyMessage(userId, messageText)
+    # compose_textReplyMessage(userId, messageText)
     # line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
 
 if __name__ == "__main__":
