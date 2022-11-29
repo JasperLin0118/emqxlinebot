@@ -61,8 +61,8 @@ def subscribe(client):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
         print(json.dumps(convertedDict, indent=4, separators=(" ", " = ")))
-    client.subscribe(topic)
-    client.on_message = on_message
+    client2.subscribe(topic)
+    client2.on_message = on_message
 
 
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
