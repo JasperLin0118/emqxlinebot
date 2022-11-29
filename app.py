@@ -18,7 +18,6 @@ client_id = 'python-mqtt-jasper'
 client_id_sub = f'python-mqtt-{random.randint(0, 100)}'
 app = Flask(__name__)
 
-msg_rec = ''
 tmp_token = ''
 
 def connect_mqtt():
@@ -47,9 +46,7 @@ def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
-        global msg_rec
-        msg_rec = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
-        line_bot_api.reply_message(tmp_token, TextSendMessage(text=msg_rec))
+        line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
     client.subscribe(topic_result)
     client.on_message = on_message
 
