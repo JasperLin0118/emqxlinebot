@@ -3,7 +3,7 @@ from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import *
-import time, random
+import time, random, json
 from paho.mqtt import client as mqtt_client
 # import random
 # import requests, traceback, logging, boto3, json, sys, os
@@ -12,15 +12,13 @@ from paho.mqtt import client as mqtt_client
 broker = 'broker.emqx.io'
 port = 1883
 topic = "esp32/smartstrip"
-client_id = f'python-mqtt-jasper'
+topic_result = "esp32/result"
+client_id = 'python-mqtt-jasper'
+# generate client ID with pub prefix randomly
+client_id_sub = f'python-mqtt-{random.randint(0, 100)}'
 app = Flask(__name__)
 
-def help():
-    print("-----------------------------------------------------------------------")
-    print("Here are the following commands:\n")
-    print("{:<14}: get device information".format("getInfo"), "{:<14}: get device emeter, 0<=id<=5".format("getEmeter [id]"), "{:<14}: turn on number [id] plug in the strip, 0<=id<=5".format("turnon [id]"), sep='\n')
-    print("{:<14}: turn off number [id] plug in the strip, 0<=id<=5".format("turnoff [id]"), sep='\n')
-    print("-----------------------------------------------------------------------")
+msg_rec = ''
 
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc):
@@ -28,13 +26,33 @@ def connect_mqtt():
             print("Connected to MQTT Broker!")
         else:
             print("Failed to connect, return code %d\n", rc)
-
     client = mqtt_client.Client(client_id)
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
 
+def connect_sub_mqtt():
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
+    client = mqtt_client.Client(client_id_sub)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
+
+def subscribe(client: mqtt_client):
+    def on_message(client, userdata, msg):
+        returnmsg = msg.payload.decode()
+        convertedDict = json.loads(returnmsg)
+        global msg_rec
+        msg_rec = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
+    client.subscribe(topic_result)
+    client.on_message = on_message
+
 client = connect_mqtt()
+client2 = connect_sub_mqtt()
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -60,7 +78,7 @@ def compose_textReplyMessage(userId, messageText):
         messageText = "Message sent"
     else:
         messageText = "Failed to send message"
-    return TextSendMessage(text=messageText)
+    return TextSendMessage(text=msg_rec)
 
 # ==== [ 處理文字 TextMessage 訊息程式區段 ] ===
 @handler.add(MessageEvent, message=TextMessage)    
@@ -73,3 +91,5 @@ def handle_text_message(event):
 if __name__ == "__main__":
     app.run()
     client.loop_start()
+    subscribe(client2)
+    client2.loop_forever()
