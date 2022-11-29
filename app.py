@@ -42,14 +42,14 @@ def connect_sub_mqtt():
     client.connect(broker, port)
     return client
 
-def subscribe(client: mqtt_client):
+def subscribe(client):
     def on_message(client, userdata, msg):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
         global tmp_userid
-        line_bot_api.push_message(tmp_userid, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
-        # global tmp_token
-        # line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
+        # line_bot_api.push_message(tmp_userid, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
+        global tmp_token
+        line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
     client.subscribe(topic_result)
     client.on_message = on_message
 
@@ -87,4 +87,4 @@ if __name__ == "__main__":
     app.run()
     client.loop_start()
     subscribe(client2)
-    client2.loop_start()
+    client2.loop_forever()
