@@ -35,9 +35,6 @@ def connect_mqtt():
     client.on_connect = on_connect
     client.connect(broker, port)
     return client
-
-client = connect_mqtt()
-client2 = connect_mqtt()
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -84,6 +81,8 @@ def handle_text_message(event):
 
 if __name__ == "__main__":
     app.run()
+    client = connect_mqtt()
+    client2 = connect_mqtt()
     client.loop_start()
     subscribe(client2)
     client2.loop_forever()
