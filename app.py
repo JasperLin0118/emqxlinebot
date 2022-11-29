@@ -45,6 +45,7 @@ def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
+        global tmp_token
         line_bot_api.reply_message(tmp_token, TextSendMessage(text='success'))
         # line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
     client.subscribe(topic_result)
