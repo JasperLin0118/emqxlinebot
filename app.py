@@ -17,6 +17,10 @@ result_topic = "esp32/result"
 client_id = 'python-mqtt-jasper'
 app = Flask(__name__)
 
+client = connect_mqtt()
+client2 = connect_mqtt()
+converted_msg = ''
+
 def help():
     print("-----------------------------------------------------------------------")
     print("Here are the following commands:\n")
@@ -57,19 +61,20 @@ def subscribe(client):
     def on_message(client, userdata, msg):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
-        print(json.dumps(convertedDict, indent=4, separators=(" ", " = ")))
-    client2.subscribe(topic)
-    client2.on_message = on_message
+        global converted_msg
+        converted_msg = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
+    client.subscribe(result_topic)
+    client.on_message = on_message
 
 
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
 def compose_textReplyMessage(userId, messageText):
     result = client.publish(topic, messageText)
-    if(result[0] == 0):
-        messageText = "Message sent"
-    else:
-        messageText = "Failed to send message"
-    return TextSendMessage(text=messageText)
+    # if(result[0] == 0):
+    #     messageText = "Message sent"
+    # else:
+    #     messageText = "Failed to send message"
+    return TextSendMessage(text=converted_msg)
 
 # ==== [ 處理文字 TextMessage 訊息程式區段 ] ===
 @handler.add(MessageEvent, message=TextMessage)    
@@ -77,12 +82,11 @@ def handle_text_message(event):
     userId = event.source.user_id
     messageText = event.message.text
     # logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
+    time.sleep(4)
     line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
 
 if __name__ == "__main__":
     app.run()
-    client = connect_mqtt()
-    client2 = connect_mqtt()
     client.loop_start()
     subscribe(client2)
     client2.loop_forever()
