@@ -25,18 +25,10 @@ def help():
     print("-----------------------------------------------------------------------")
 
 def connect_mqtt():
-    def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            print("Connected to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
-
     client = mqtt_client.Client(client_id)
-    client.on_connect = on_connect
     client.connect(broker, port)
     return client
             
-client = connect_mqtt()
 client2 = connect_mqtt()
 converted_msg = ''            
 
@@ -70,10 +62,10 @@ def subscribe(client):
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
 def compose_textReplyMessage(userId, messageText):
     result = client.publish(topic, messageText)
-    # if(result[0] == 0):
-    #     messageText = "Message sent"
-    # else:
-    #     messageText = "Failed to send message"
+    if(result[0] == 0):
+        messageText = "Message sent"
+    else:
+        messageText = "Failed to send message"
     return TextSendMessage(text=converted_msg)
 
 # ==== [ 處理文字 TextMessage 訊息程式區段 ] ===
@@ -82,11 +74,10 @@ def handle_text_message(event):
     userId = event.source.user_id
     messageText = event.message.text
     # logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
-    time.sleep(4)
+    # time.sleep(4)
     line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
 
 if __name__ == "__main__":
     app.run()
+    client = connect_mqtt()
     client.loop_start()
-    subscribe(client2)
-    client2.loop_forever()
