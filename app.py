@@ -17,10 +17,6 @@ result_topic = "esp32/result"
 client_id = 'python-mqtt-jasper'
 app = Flask(__name__)
 
-client = connect_mqtt()
-client2 = connect_mqtt()
-converted_msg = ''
-
 def help():
     print("-----------------------------------------------------------------------")
     print("Here are the following commands:\n")
@@ -40,6 +36,10 @@ def connect_mqtt():
     client.connect(broker, port)
     return client
             
+client = connect_mqtt()
+client2 = connect_mqtt()
+converted_msg = ''            
+
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
 handler = WebhookHandler("db28adadcf721c2d441da3c3e16121c2")
