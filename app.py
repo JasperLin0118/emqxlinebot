@@ -19,6 +19,7 @@ client_id_sub = f'python-mqtt-{random.randint(0, 100)}'
 app = Flask(__name__)
 
 msg_rec = ''
+tmp_token = ''
 
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc):
@@ -48,6 +49,7 @@ def subscribe(client: mqtt_client):
         convertedDict = json.loads(returnmsg)
         global msg_rec
         msg_rec = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
+        line_bot_api.reply_message(tmp_token, TextSendMessage(text=msg_rec))
     client.subscribe(topic_result)
     client.on_message = on_message
 
@@ -74,19 +76,18 @@ def callback():
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
 def compose_textReplyMessage(userId, messageText):
     result = client.publish(topic, messageText)
-    if(result[0] == 0):
-        messageText = "Message sent"
-    else:
-        messageText = "Failed to send message"
     return TextSendMessage(text=msg_rec)
 
 # ==== [ 處理文字 TextMessage 訊息程式區段 ] ===
 @handler.add(MessageEvent, message=TextMessage)    
 def handle_text_message(event):
+    global tmp_token
+    tmp_token = event.reply_token
     userId = event.source.user_id
     messageText = event.message.text
     # logger.info('收到 MessageEvent 事件 | 使用者 %s 輸入了 [%s] 內容' % (userId, messageText))
-    line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
+    compose_textReplyMessage(userId, messageText)
+    # line_bot_api.reply_message(event.reply_token, compose_textReplyMessage(userId, messageText))
 
 if __name__ == "__main__":
     app.run()
