@@ -29,6 +29,7 @@ def connect_mqtt():
     client.connect(broker, port)
     return client
             
+client = connect_mqtt()
 converted_msg = ''            
 
 #basic linebot info
@@ -48,14 +49,14 @@ def callback():
         abort(400)
     return 'OK'
 
-def subscribe(client):
-    def on_message(client, userdata, msg):
-        returnmsg = msg.payload.decode()
-        convertedDict = json.loads(returnmsg)
-        global converted_msg
-        converted_msg = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
-    client.subscribe(result_topic)
-    client.on_message = on_message
+# def subscribe(client):
+#     def on_message(client, userdata, msg):
+#         returnmsg = msg.payload.decode()
+#         convertedDict = json.loads(returnmsg)
+#         global converted_msg
+#         converted_msg = json.dumps(convertedDict, indent=4, separators=(" ", " = "))
+#     client.subscribe(result_topic)
+#     client.on_message = on_message
 
 
 # === [ 定義回覆使用者輸入的文字訊息 - 依據使用者狀態，回傳組成 LINE 的 Template 元素 ] ===
@@ -77,5 +78,4 @@ def handle_text_message(event):
 
 if __name__ == "__main__":
     app.run()
-    client = connect_mqtt()
     client.loop_start()
