@@ -14,7 +14,6 @@ port = 1883
 topic = "esp32/smartstrip"
 topic_result = "esp32/result"
 client_id = 'python-mqtt-jasper'
-# generate client ID with pub prefix randomly
 client_id_sub = f'python-mqtt-{random.randint(0, 100)}'
 app = Flask(__name__)
 
@@ -23,9 +22,9 @@ tmp_token = ''
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to MQTT Broker!")
+            print("Connected to MQTT Broker!\n")
         else:
-            print("Failed to connect, return code %d\n", rc)
+            print("Failed to connect\n")
     client = mqtt_client.Client(client_id)
     client.on_connect = on_connect
     client.connect(broker, port)
@@ -34,9 +33,9 @@ def connect_mqtt():
 def connect_sub_mqtt():
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to MQTT Broker!")
+            print("Connected to MQTT Broker!\n")
         else:
-            print("Failed to connect, return code %d\n", rc)
+            print("Failed to connect\n")
     client = mqtt_client.Client(client_id_sub)
     client.on_connect = on_connect
     client.connect(broker, port)
@@ -46,12 +45,14 @@ def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
-        line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
+        line_bot_api.reply_message(tmp_token, TextSendMessage(text='success'))
+        # line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
     client.subscribe(topic_result)
     client.on_message = on_message
 
 client = connect_mqtt()
 client2 = connect_sub_mqtt()
+subscribe(client2)
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -90,5 +91,4 @@ def handle_text_message(event):
 if __name__ == "__main__":
     app.run()
     client.loop_start()
-    subscribe(client2)
     client2.loop_forever()
