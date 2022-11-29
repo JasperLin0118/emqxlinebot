@@ -46,14 +46,12 @@ def subscribe(client: mqtt_client):
         returnmsg = msg.payload.decode()
         convertedDict = json.loads(returnmsg)
         global tmp_token
-        line_bot_api.reply_message(tmp_token, TextSendMessage(text='success'))
-        # line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
+        line_bot_api.reply_message(tmp_token, TextSendMessage(text=json.dumps(convertedDict, indent=4, separators=(" ", " = "))))
     client.subscribe(topic_result)
     client.on_message = on_message
 
 client = connect_mqtt()
 client2 = connect_sub_mqtt()
-subscribe(client2)
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -92,4 +90,5 @@ def handle_text_message(event):
 if __name__ == "__main__":
     app.run()
     client.loop_start()
-    client2.loop_forever()
+    subscribe(client2)
+    client2.loop_start()
