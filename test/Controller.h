@@ -23,6 +23,17 @@ public:
     String setLed(bool power);
     String turn_off(String id);
     String turn_on(String id);
+    String set_alias(String id, String name);
+    String reboot();
+    String reset_to_factory_settings();
+    String scan_wifi();
+    String get_time();
+    String get_timezone();
+    String set_timezone(String index);
+    String get_countdown(String id);
+    String set_countdown(String id, bool power, String duration);
+    String cancel_countdown(String id);
+    String get_emeter_gain(String id);
 };
 
 #endif

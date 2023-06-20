@@ -3,8 +3,12 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 
-const char* ssid = "ICE CREAM DELIVERY";
-const char* password = "ILOVENAKO";
+// const char* ssid = "JOY MART(2.4G)";
+// const char* password = "0925218518";
+// const char* ssid = "ICE CREAM DELIVERY";
+// const char* password = "ILOVENAKO";
+const char* ssid = "Jasper";
+const char* password = "jasper53540759";
 
 // MQTT Broker
 const char* mqtt_broker = "broker.emqx.io";
@@ -15,7 +19,9 @@ const char* mqtt_password = "public";
 const int mqtt_port = 1883;
 
 //smartstrip
-IPAddress stripIP = {192, 168, 31, 9};
+//IPAddress stripIP = {192, 168, 0, 105}; //at home
+// IPAddress stripIP = {192, 168, 31, 9}; //at dorm
+IPAddress stripIP = {192, 168, 73, 84}; //final
 Controller strip(stripIP, 9999);
 String ids[6] = {"8006DAF56A19C24578480586C08E65D01F0F716F00", "8006DAF56A19C24578480586C08E65D01F0F716F01",
                  "8006DAF56A19C24578480586C08E65D01F0F716F02", "8006DAF56A19C24578480586C08E65D01F0F716F03",
@@ -73,68 +79,127 @@ void callback(char* Topic, byte* payload, unsigned int length)
     char* receive_msg = (char*)payload;
     const char* delim = " ";
     char* first_arg = strtok(receive_msg, delim);    
-    // if(strcmp(first_arg, "getEmeter") == 0)
-    // {  
-    //     Serial.println("getEmeter");
-    //     String response = strip.getEmeter();
-    //     if (response == "")
-    //         client.publish(result_topic, "No response from plug or not connected");
-    //     else
-    //         client.publish(result_topic, response.c_str());
-    // }
+    String response = "";
     if(strcmp(first_arg, "getEmeter") == 0)
     {
         Serial.println("getEmeter");
         char* num = strtok(NULL, delim);
-        int ind = atoi(num);
-        String response = strip.getEmeter(ids[ind]);
-        if (response == "")
-            client.publish(result_topic, "No response from plug or not connected");
-        else
-            client.publish(result_topic, response.c_str());
+        int ind = atoi(num)-1;
+        response = strip.getEmeter(ids[ind]);
     }
     else if(strcmp(first_arg, "getInfo") == 0)
     {
         Serial.println("getInfo");
-        String response = strip.getInfo();
-        if (response == "")
-            client.publish(result_topic, "No response from plug or not connected");
-        else
-            client.publish(result_topic, response.c_str());
+        response = strip.getInfo();
     }
     else if(strcmp(first_arg, "turnoff") == 0)
     {
         Serial.println("turnoff");
         char* num = strtok(NULL, delim);
-        int ind = atoi(num);
-        String response = strip.turn_off(ids[ind]);
-        if (response == "")
-            client.publish(result_topic, "No response from plug or not connected");
-        else
-            client.publish(result_topic, response.c_str());
+        int ind = atoi(num)-1;
+        response = strip.turn_off(ids[ind]);
     }
     else if(strcmp(first_arg, "turnon") == 0)
     {
         Serial.println("turnon");
         char* num = strtok(NULL, delim);
-        int ind = atoi(num);
-        String response = strip.turn_on(ids[ind]);
-        if (response == "")
-            client.publish(result_topic, "No response from plug or not connected");
-        else
-            client.publish(result_topic, response.c_str());
+        int ind = atoi(num)-1;
+        response = strip.turn_on(ids[ind]);
     }
-    else if(strcmp(first_arg, "exit") == 0)
+    else if(strcmp(first_arg, "setAlias") == 0)
     {
-          Serial.println("exit");
-          client.publish(result_topic, (const uint8_t*)"exit", 4, false);
+        Serial.println("setAlias");
+        char* num = strtok(NULL, delim);
+        int ind = atoi(num)-1;
+        char* name = strtok(NULL, delim);
+        String name_str = "";
+        while(name != NULL)
+        {
+            name_str += String(name) + " ";         
+            name = strtok(NULL, delim);
+        }
+        Serial.println(name_str);
+        response = strip.set_alias(ids[ind], name_str);
+    }
+    else if(strcmp(first_arg, "reboot") == 0)
+    {
+        Serial.println("reboot");
+        response = strip.reboot();      
+    }
+    else if(strcmp(first_arg, "scan") == 0)
+    {
+        Serial.println("scan wifi");
+        response = strip.scan_wifi();
+    }
+    else if(strcmp(first_arg, "led") == 0)
+    {
+        Serial.println("turn on/off led");
+        char* num = strtok(NULL, delim);
+        bool power = true;
+        if(atoi(num) == 0)
+            power = false; 
+        response = strip.setLed(power);
+    }
+    else if(strcmp(first_arg, "time") == 0)
+    {
+        Serial.println("time");
+        response = strip.get_time();
+    }    
+    else if(strcmp(first_arg, "timezone") == 0)
+    {
+        Serial.println("timezone");
+        response = strip.get_timezone();
+    }
+    else if(strcmp(first_arg, "reset") == 0)
+    {
+        Serial.println("reset");
+        response = strip.reset_to_factory_settings();      
+    }
+    else if(strcmp(first_arg, "settimezone") == 0)
+    {
+        Serial.println("settimezone");
+        char* num = strtok(NULL, delim);      
+        response = strip.set_timezone(String(num));
+    }
+    else if(strcmp(first_arg, "getcountdown") == 0)
+    {
+        Serial.println("getcountdown");
+        char* num = strtok(NULL, delim);
+        int ind = atoi(num)-1;
+        response = strip.get_countdown(ids[ind]);        
+    }
+    else if(strcmp(first_arg, "cancelcountdown") == 0)
+    {
+        Serial.println("cancelcountdown");
+        char* num = strtok(NULL, delim);
+        int ind = atoi(num)-1;
+        response = strip.cancel_countdown(ids[ind]);        
+    }
+    else if(strcmp(first_arg, "setcountdown") == 0)
+    {
+        Serial.println("setcountdown");
+        char* num = strtok(NULL, delim);
+        int ind = atoi(num)-1;
+        char* duration = strtok(NULL, delim);
+        char* power = strtok(NULL, delim);
+        if(strcmp(power, "on") == 0)
+            response = strip.set_countdown(ids[ind], true, duration);   
+        else
+            response = strip.set_countdown(ids[ind], false, duration);
+    }
+    else if(strcmp(first_arg, "getEmeterGain") == 0)
+    {
+        Serial.println("getEmeterGain");
+        char* num = strtok(NULL, delim);
+        int ind = atoi(num)-1;
+        response = strip.get_emeter_gain(ids[ind]);
     }
     else
     {
-          Serial.println("No such command");
-          client.publish(result_topic, (const uint8_t*)"No such command", 15, false);
+        response = "No such command";      
     }
-      
+    Serial.println(response);
+    client.publish(result_topic, response.c_str());   
 }
 
 void loop()

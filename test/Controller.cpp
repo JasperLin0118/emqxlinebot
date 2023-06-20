@@ -76,6 +76,78 @@ String Controller::turn_on(String id)
     return sendCmd(cmd);
 }
 
+String Controller::set_alias(String id, String name)
+{
+    String cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"system\":{\"set_dev_alias\":{\"alias\":\"" + name + "\"}}}";
+    return sendCmd(cmd);  
+}
+
+String Controller::reboot()
+{
+    String cmd = "{\"system\":{\"reboot\":{\"delay\":1}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::scan_wifi()
+{
+    String cmd = "{\"netif\":{\"get_scaninfo\":{\"refresh\":0}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::get_time()
+{
+    String cmd = "{\"time\":{\"get_time\":null}}";
+    return sendCmd(cmd);
+}
+
+String Controller::get_timezone()
+{
+    String cmd = "{\"time\":{\"get_timezone\":null}}";
+    return sendCmd(cmd);
+}
+
+String Controller::set_timezone(String index)
+{
+    String cmd = "{\"time\":{\"set_timezone\":{\"index\":" + index + "}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::get_countdown(String id)
+{ 
+    String cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"get_rules\":null}}";
+    return sendCmd(cmd);
+}
+
+String Controller::cancel_countdown(String id)
+{
+    String cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"edit_rule\":{\"enable\":0,\"id\":\"32\",\"delay\":0,\"act\":1,\"name\":\"turn on\"}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::set_countdown(String id, bool power, String duration)
+{
+    String cmd = "";
+    if(power) //on
+        cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"edit_rule\":{\"enable\":1,\"id\":\"32\",\"delay\":" + duration + ",\"act\":1,\"name\":\"turn on\"}}}";
+        // cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"add_rule\":{\"enable\":1,\"delay\":" + duration + ",\"act\":1,\"name\":\"turn on\"}}}";
+    else //off
+        cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"edit_rule\":{\"enable\":1,\"id\":\"32\",\"delay\":" + duration + ",\"act\":0,\"name\":\"turn off\"}}}";
+        // cmd = "{\"context\":{\"child_ids\":[\"" + id + "\"]},\"count_down\":{\"add_rule\":{\"enable\":1,\"delay\":" + duration + ",\"act\":0,\"name\":\"turn off\"}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::get_emeter_gain(String id)
+{
+    String cmd = "{\"emeter\":{\"get_vgain_igain\":{}}}";
+    return sendCmd(cmd);
+}
+
+String Controller::reset_to_factory_settings()
+{
+    String cmd = "{\"system\":{\"reset\":{\"delay\":1}}}";
+    return sendCmd(cmd);
+}
+
 String Controller::sendCmd(String cmd)
 {
     char encrypted[cmd.length() + 4];
