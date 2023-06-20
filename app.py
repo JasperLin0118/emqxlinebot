@@ -32,6 +32,7 @@ topic_result = "esp32/result"
 client_id = f'python-mqtt-{random.randint(0, 100)}'
 app = Flask(__name__)
 
+tmp_list = []
 tmp_token = ''
 tmp_text = ''
 
@@ -43,12 +44,12 @@ def timedelta_formatter(td):
     return msg 
 
 def help():
-    textmessage = "Here are the following commands:\n\n"
+    textmessage = "Here are the following commands:\nid = 1~6, duration is in second(s)\n\n"
     textmessage += "{:<25}: get device information\n".format("getInfo")
-    textmessage += "{:<21}: get realtime Current and Voltage reading, 1<=id<=6\n".format("getEmeter [id]")
-    textmessage += "{:<24}: turn on number [id] plug in the strip, 1<=id<=6\n".format("turnon [id]")
-    textmessage += "{:<25}: turn off number [id] plug in the strip, 1<=id<=6\n".format("turnoff [id]")
-    textmessage += "{:<21}: set alias of number [id] plug in the strip, 1<=id<=6\n".format("setAlias [id] [alias]")
+    textmessage += "{:<21}: get realtime Current and Voltage reading\n".format("getEmeter [id/name]")
+    textmessage += "{:<17}: get Current and Voltage gain\n".format("getEmeterGain [id/name]")
+    textmessage += "{:<21}: turn on/off number [id/name] plug in the strip\n".format("turnon/turnoff [id/name]")
+    textmessage += "{:<21}: set alias of number [id] plug in the strip\n".format("setAlias [id] [alias]")
     textmessage += "{:<25}: reboot the strip\n".format("reboot")
     textmessage += "{:<26}: reset to factory settings\n".format("reset")
     textmessage += "{:<25}: turn on/off Led light on the strip\n".format("led [1/0]")
@@ -56,7 +57,9 @@ def help():
     textmessage += "{:<26}: get current time\n".format("time")
     textmessage += "{:<22}: get current timezone\n".format("timezone")
     textmessage += "{:<18}: set timezone (UTC), -12<=time<=14\n".format("settimezone [time]")
-    
+    textmessage += "{:<18}: get countdown info for [id] plug\n".format("getcountdown [id/name]")
+    textmessage += "{:<25}: set countdown for [id] plug\n".format("setcountdown [id] [duration] [on/off]")
+    textmessage += "{:<20}: cancel countdown for [id] plug\n".format("cancelcountdown [id/name]")
     textmessage += "{:<25}: show history commands\n".format("history")
     line_bot_api.reply_message(tmp_token, TextSendMessage(text=textmessage))
 
@@ -76,11 +79,16 @@ def on_message(client, userdata, msg):
         elif(tmp_text == "getEmeter"): #get emeter
             reply_msg = ""
             for key, value in convertedDict["emeter"]["get_realtime"].items():
+                if(key == "err_code"):
+                    continue
                 reply_msg += "{:<15}: {}\n".format(key, value)
             line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
         elif(tmp_text == "getInfo"): #get info
             reply_msg = ""
             ind = 1
+            document_ref = db.collection("linebot_user_ids").document("child_plug_names")
+            child_names = document_ref.get()
+            child_names = child_names.to_dict()
             for dict in convertedDict["system"]["get_sysinfo"]["children"]:
                 reply_msg += "Plug {}:\n".format(ind)
                 for key, value in dict.items():
@@ -92,16 +100,23 @@ def on_message(client, userdata, msg):
                         reply_msg += "{:<12}: {}\n".format(key, value)
                     elif(key == "on_time"):
                         timestamp = value
-                        reply_msg += "{:<12}: {}\n".format(key, timedelta_formatter(datetime.timedelta(seconds=timestamp)))
-                    elif(key != "next_action" and key != "id"):
+                        reply_msg += "{:<9}: {}\n".format(key, timedelta_formatter(datetime.timedelta(seconds=timestamp)))
+                    elif(key == "alias"):
+                        child_names[str(ind-1)] = value
                         reply_msg += "{:<12}: {}\n".format(key, value)
                 ind += 1
                 reply_msg += "\n"
+            document_ref.update(child_names)
             line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
         elif(tmp_text == "setAlias"): #set alias
             if(convertedDict["system"]["set_dev_alias"]["err_code"] != 0):
                 line_bot_api.reply_message(tmp_token, TextSendMessage(text="Error:" + convertedDict["system"]["set_dev_alias"]["err_msg"]))
             else:
+                document_ref = db.collection("linebot_user_ids").document("child_plug_names")
+                child_names = document_ref.get()
+                child_names = child_names.to_dict()
+                child_names[str(int(tmp_list[1])-1)] = ' '.join(tmp_list[2:])
+                document_ref.update(child_names)
                 line_bot_api.reply_message(tmp_token, TextSendMessage(text="Success"))
         elif(tmp_text == "reboot"): #reboot
             line_bot_api.reply_message(tmp_token, TextSendMessage(text="Success"))
@@ -116,7 +131,7 @@ def on_message(client, userdata, msg):
             if(convertedDict["netif"]["get_scaninfo"]["err_code"] != 0):
                 line_bot_api.reply_message(tmp_token, TextSendMessage(text="Error:" + convertedDict["netif"]["get_scaninfo"]["err_msg"]))
             else:
-                reply_msg = "Name:\n"
+                reply_msg = "Wifi Name:\n"
                 for ap in convertedDict["netif"]["get_scaninfo"]["ap_list"]:
                     reply_msg += "{}\n".format(ap['ssid'])
                 line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
@@ -137,6 +152,35 @@ def on_message(client, userdata, msg):
             line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
         elif(tmp_text == "settimezone"): #set timezone
             line_bot_api.reply_message(tmp_token, TextSendMessage(text="Success"))
+        elif(tmp_text == "getcountdown"): #get countdown
+            if(convertedDict["count_down"]["get_rules"]["rule_list"][0]["enable"] == 1):
+                reply_msg = "Slot " + str(tmp_list[1]) + " will be "
+                if(convertedDict["count_down"]["get_rules"]["rule_list"][0]["act"] == 1): #turn on
+                    reply_msg += "turned on in " + str(convertedDict["count_down"]["get_rules"]["rule_list"][0]["remain"]) + " seconds"
+                else: #turn off
+                    reply_msg += "turned off in " + str(convertedDict["count_down"]["get_rules"]["rule_list"][0]["remain"]) + " seconds"
+                line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
+            else:
+                line_bot_api.reply_message(tmp_token, TextSendMessage(text="No countdown set"))
+        elif(tmp_text == "setcountdown"): #set countdown
+            line_bot_api.reply_message(tmp_token, TextSendMessage(text="Success"))
+        elif(tmp_text == "cancelcountdown"): #cancel countdown
+            line_bot_api.reply_message(tmp_token, TextSendMessage(text="Success"))
+        elif(tmp_text == "getEmeterGain"): #get emeter gain
+            document_ref = db.collection("linebot_user_ids").document("child_plug_names")
+            child_names = document_ref.get()
+            child_names = child_names.to_dict()
+            child_name = ' '.join(tmp_list[1:])
+            child_index = 0
+            for child in child_names:
+                if(child_name == child_names[child]):
+                    child_index = int(child)
+                    break
+            reply_msg = ""
+            reply_msg += "vgain: " + str(convertedDict["emeter"]["get_vgain_igain"]["data"][child_index]["vgain"]) + '\n'
+            reply_msg += "igain: " + str(convertedDict["emeter"]["get_vgain_igain"]["data"][child_index]["igain"])
+            line_bot_api.reply_message(tmp_token, TextSendMessage(text=reply_msg))
+            
             
 #basic linebot info
 line_bot_api = LineBotApi("aQR2IjGV0u1EtyXHWvpcysJoCL/77lL9Mw/JbALyeWcMmQZSblPc1xuvyiUhjIpNOsz65QFGObs4g4gvFuXSZvE6MC0n4NwwCM4L9vCReUt8TCsYAaV/NayQ5LGWfBpBDt0leJBIkgwAlye0siXQsgdB04t89/1O/w1cDnyilFU=")
@@ -162,11 +206,26 @@ def handle_text_message(event):
     messageText = event.message.text
     global tmp_text
     tmp_text = messageText.split()[0]
+    global tmp_list
+    tmp_list = messageText.split()
     if(messageText == "help"):
         help()
     elif(messageText == "history"):
         pass
-    elif (messageText.startswith("settimezone")):
+    elif(messageText.startswith("turnon") or messageText.startswith("turnoff") or messageText.startswith("getEmeter") or 
+         messageText.startswith("getcountdown") or messageText.startswith("cancelcountdown") or messageText.startswith("getEmeterGain")):
+        if(tmp_list[1].isdigit() == False):
+            document_ref = db.collection("linebot_user_ids").document("child_plug_names")
+            child_names = document_ref.get()
+            child_names = child_names.to_dict()
+            child_name = ' '.join(tmp_list[1:])
+            for child in child_names:
+                if(child_name == child_names[child]):
+                    messageText = tmp_text + " " + str(int(child) + 1)
+                    break
+        client.publish(topic, messageText)
+        print("publish success")
+    elif(messageText.startswith("settimezone")):
         str_args = messageText.split()
         if(str_args[1].isdigit() and int(str_args[1]) >= -12 and int(str_args[1]) <= 14):
             wanted_timezone = "UTC"
@@ -196,18 +255,20 @@ def handle_text_message(event):
         print("publish success")
     document_ref = db.collection("linebot_user_ids").document(event.source.user_id)
     history = document_ref.get()
-    # if(history.exists):
-    #     history = history.to_dict()['history']
-    #     history.append(messageText)
-    #     document_ref.update({'history': history})
-    # else:
-    #     d = {'user_id': event.source.user_id, 'history': [messageText]}
-    #     document_ref.set(d)
+    if(history.exists):
+        history = history.to_dict()['history']
+        history.append(messageText)
+        document_ref.update({'history': history})
+    else:
+        d = {'user_id': event.source.user_id, 'history': [messageText]}
+        document_ref.set(d)
     if(messageText == "history"):
         history = document_ref.get().to_dict()['history']
         outputText = "Here are the history commands:\n"
-        for i in range(len(history)):
-            outputText += str(i+1) + " " + history[i] + "\n"
+        cnt = 1
+        for i in range(len(history) - 10, len(history)):
+            outputText += str(cnt) + " " + history[i] + "\n"
+            cnt += 1
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=outputText))
         
 
